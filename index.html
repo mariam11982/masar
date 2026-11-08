@@ -1,0 +1,922 @@
+<title>مسار</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Readex+Pro:wght@400;600;700&display=swap">
+<style>
+/* Layout concept: chart-room console. Full-bleed nautical chart on the left, a tall analysis panel on the right (start side in RTL). */
+:root{
+    .panel {
+  background-color: #1c3c6a;
+}
+.top {
+  background-color: #1c3c6a;
+  border-bottom-color: #1c3c6a;
+}
+
+.top .brand b {
+  color: #ffffff;
+}
+
+.top .brand small,
+.top .feed {
+  color: #dce6f2;
+}
+#feed-sw {
+  position: relative;
+  flex: 0 0 46px;
+  width: 46px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: #64748b;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#feed-sw::after {
+  content: "";
+  position: absolute;
+  inset: auto;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px #0004;
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+}
+
+#feed-sw[aria-pressed="true"] {
+  background: #0d9488;
+}
+
+#feed-sw[aria-pressed="true"]::after {
+  transform: translateX(20px);
+}
+  --f-head:'Readex Pro','IBM Plex Sans Arabic',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans Arabic','Readex Pro',system-ui,sans-serif;
+  --bg:#edf2f4; --panel:#ffffff; --panel2:#f4f8fa; --ink:#0c2230; --muted:#587080; --line:#d2dce2;
+  --accent:#0a6f86; --accent-ink:#ffffff; --accent-soft:#d7edf2;
+  --sea:#cddfe8; --land:#e6e9df; --coast:#97b0bd; --grid:rgba(10,70,100,.10);
+  --ok:#1b8657; --warn:#b97a06; --crit:#c23b2d; --sev:#8b2257;
+  --ok-bg:#dcf1e7; --warn-bg:#f8ead0; --crit-bg:#f8dcd8; --sev-bg:#f1d9e6;
+  --shadow:0 1px 2px rgba(8,34,48,.08),0 6px 18px rgba(8,34,48,.08);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#07131b; --panel:#0d1e29; --panel2:#112734; --ink:#e3eef3; --muted:#8aa4b2; --line:#203847;
+  --accent:#3dc1d9; --accent-ink:#04202a; --accent-soft:#12394a;
+  --sea:#0a1a25; --land:#15303d; --coast:#2d5266; --grid:rgba(120,190,220,.09);
+  --ok:#3fc48c; --warn:#e3ad3b; --crit:#f0705f; --sev:#dc72a8;
+  --ok-bg:#12372b; --warn-bg:#3a2e12; --crit-bg:#3d1b18; --sev-bg:#3a1a2b;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#07131b; --panel:#0d1e29; --panel2:#112734; --ink:#e3eef3; --muted:#8aa4b2; --line:#203847;
+  --accent:#3dc1d9; --accent-ink:#04202a; --accent-soft:#12394a;
+  --sea:#0a1a25; --land:#15303d; --coast:#2d5266; --grid:rgba(120,190,220,.09);
+  --ok:#3fc48c; --warn:#e3ad3b; --crit:#f0705f; --sev:#dc72a8;
+  --ok-bg:#12372b; --warn-bg:#3a2e12; --crit-bg:#3d1b18; --sev-bg:#3a1a2b;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.65 var(--f-body);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr)}
+
+/* top bar */
+.top{background:var(--panel);border-bottom:1px solid var(--line);padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));}
+.top-in{display:flex;align-items:center;gap:14px;padding-block:9px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-inline-end:auto}
+.brand svg{width:34px;height:34px;flex:none}
+.brand b{font:700 22px/1 var(--f-head);letter-spacing:0}
+.brand small{display:block;color:var(--muted);font-size:11.5px;line-height:1.3;margin-top:3px}
+.modes{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.modes button{border:0;background:transparent;padding:6px 14px;border-radius:8px;font-weight:600;color:var(--muted)}
+.modes button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.badge-sim{font-size:11.5px;font-weight:600;color:var(--warn);background:var(--warn-bg);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.feed{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.sw{position:relative;width:36px;height:20px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);padding:0}
+.sw::after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform .2s}
+.sw[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.sw[aria-pressed="true"]::after{background:var(--accent-ink);transform:translateX(-16px)}
+
+/* stage */
+.stage{display:grid;grid-template-columns:minmax(370px,450px) minmax(0,1fr);min-height:0}
+.panel{overflow-y:auto;background:var(--bg);padding-block:14px 28px;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px;min-width:0;border-inline-end:1px solid var(--line)}
+.mapwrap{position:relative;min-width:0;min-height:0}
+#map{position:absolute;inset:0;direction:ltr;background:var(--sea)}
+@media (max-width:900px){
+  .stage{display:block;overflow-y:auto}
+  .mapwrap{height:52dvh;min-height:340px}
+  .panel{overflow:visible;border-inline-end:0}
+}
+
+/* cards & controls */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);min-width:0}
+.card h3,.h{font:600 14px/1.4 var(--f-head);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.lab{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+.row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.grow{flex:1 1 130px;min-width:0}
+select,input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.swap{border:1px solid var(--line);background:var(--panel2);border-radius:8px;width:38px;height:36px;font-size:16px}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
+.seg button{flex:1;border:0;background:transparent;border-radius:7px;padding:5px 6px;font-size:12.5px;color:var(--muted);font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:8px 12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs .dot[hidden]{display:none}
+.tabs .dot{display:inline-block;min-width:18px;height:18px;border-radius:9px;background:var(--crit);color:#fff;font-size:11px;line-height:18px;text-align:center;margin-inline-start:4px}
+
+/* pills */
+.pill{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.l-low{background:var(--ok-bg);color:var(--ok)} .l-mid{background:var(--warn-bg);color:var(--warn)}
+.l-high{background:var(--crit-bg);color:var(--crit)} .l-sev{background:var(--sev-bg);color:var(--sev)}
+.best{background:var(--accent);color:var(--accent-ink)}
+
+/* route cards */
+.routes{display:flex;flex-direction:column;gap:8px}
+.rc{text-align:start;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;display:grid;gap:8px;box-shadow:var(--shadow)}
+.rc[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),var(--shadow)}
+.rc-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rc-h b{font:600 14px/1.3 var(--f-head);margin-inline-end:auto}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.kv div{background:var(--panel2);border-radius:8px;padding:6px 8px;min-width:0}
+.kv small{display:block;color:var(--muted);font-size:11.5px;line-height:1.3}
+.kv strong{font-size:14.5px;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{background:var(--panel2);border-radius:10px;padding:9px 11px;min-width:0}
+.tile small{display:block;color:var(--muted);font-size:12px}
+.tile strong{font:600 19px/1.3 var(--f-head)} .tile em{font-style:normal;font-size:12px;color:var(--muted)}
+.note{font-size:12.5px;color:var(--muted)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th,.tbl td{padding:6px 6px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl th{font-weight:600;color:var(--muted);font-size:12px}
+.scroll-x{overflow-x:auto}
+.up{color:var(--crit)} .down{color:var(--ok)}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:6px 11px;font-weight:600;font-size:12.5px}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sm{padding:3px 9px;font-size:12px}
+svg text{font-family:var(--f-body)}
+
+/* alerts */
+.al{display:grid;gap:3px;border-inline-start:3px solid var(--line);padding:6px 10px;background:var(--panel2);border-radius:6px}
+.al.sev-h{border-color:var(--crit)} .al.sev-m{border-color:var(--warn)} .al.sev-l{border-color:var(--ok)}
+.al b{font-weight:600;font-size:13px} .al span{font-size:12px;color:var(--muted)}
+.evs{display:grid;gap:6px}
+.ev{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--panel2);border-radius:8px;padding:6px 10px;font-size:12.5px}
+
+/* reversal banner */
+.rev{position:absolute;z-index:900;top:12px;inset-inline:12px;margin-inline:auto;max-width:560px;background:var(--crit);color:#fff;border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);display:grid;gap:3px;animation:pop .35s ease}
+.rev b{font:700 14px/1.4 var(--f-head)} .rev span{font-size:12.5px;opacity:.95}
+.rev button{position:absolute;top:6px;inset-inline-end:8px;border:0;background:transparent;color:#fff;font-size:18px;line-height:1}
+.rev.ok{background:var(--accent);color:var(--accent-ink)}
+@keyframes pop{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
+
+/* map overlays */
+.mctl{position:absolute;z-index:800;inset-inline-start:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.mctl button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-size:18px;box-shadow:var(--shadow)}
+.legend{position:absolute;z-index:800;inset-inline-end:10px;bottom:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:12px;box-shadow:var(--shadow);display:grid;gap:3px}
+.legend i{display:inline-block;width:18px;height:4px;border-radius:2px;margin-inline-end:7px;vertical-align:middle}
+.legend .zs{width:12px;height:12px;border-radius:50%;opacity:.5;margin-inline-end:7px}
+.hint{position:absolute;z-index:800;inset-inline-start:10px;bottom:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font-size:12px;box-shadow:var(--shadow);max-width:60%}
+.toast{position:fixed;z-index:2000;bottom:calc(16px + env(safe-area-inset-bottom,0px));inset-inline:16px;margin-inline:auto;width:fit-content;max-width:92%;background:var(--ink);color:var(--bg);border-radius:10px;padding:9px 16px;font-size:13px;box-shadow:var(--shadow)}
+
+/* map markers */
+.pt{display:flex;flex-direction:column;align-items:center;gap:2px;transform:translate(0,-6px)}
+.pt i{width:13px;height:13px;border-radius:50%;background:var(--panel);border:3px solid var(--accent);box-shadow:0 0 0 3px rgba(10,111,134,.2)}
+.pt.on i{background:var(--accent)}
+.pt span{font:600 11.5px/1 var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 6px;white-space:nowrap;direction:rtl}
+.rl{font:600 11.5px/1 var(--f-body);background:var(--panel);color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:3px 9px;white-space:nowrap;direction:rtl;box-shadow:var(--shadow);transform:translate(-50%,-50%)}
+.rl.sel{background:var(--ink);color:var(--bg)}
+.rl em{font-style:normal;color:var(--accent);margin-inline-start:4px}
+.zl{font:600 10.5px/1.2 var(--f-body);color:var(--ink);opacity:.8;text-align:center;direction:rtl;white-space:nowrap;text-shadow:0 0 3px var(--sea),0 0 3px var(--sea);transform:translate(-50%,-50%)}
+.flow{stroke-dasharray:10 9;animation:flow 1.1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-19}}
+@media (prefers-reduced-motion:reduce){.flow{animation:none}.rev{animation:none}}
+
+/* agent mode */
+.offer{display:grid;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow)}
+.offer.rec{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),var(--shadow)}
+.offer.no{opacity:.62}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-size:11.5px;border-radius:6px;padding:1px 8px;background:var(--panel2);color:var(--muted)}
+.chip.g{background:var(--ok-bg);color:var(--ok)} .chip.r{background:var(--crit-bg);color:var(--crit)}
+
+/* leaflet essentials (inlined; stylesheets from other hosts are blocked) */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;-webkit-tap-highlight-color:transparent;outline-offset:1px}
+.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}
+.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-image-layer,.leaflet-pane>svg *,.leaflet-tile{pointer-events:none}
+.leaflet-marker-icon.leaflet-interactive,.leaflet-image-layer.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive{pointer-events:visiblePainted;pointer-events:auto}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}
+.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}
+.leaflet-zoom-animated{transform-origin:0 0}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}
+.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
+.leaflet-interactive{cursor:pointer}
+.leaflet-grab{cursor:grab}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-interactive{cursor:grabbing}
+.leaflet-tooltip{position:absolute;padding:5px 9px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow);font:12px/1.5 var(--f-body);direction:rtl}
+.leaflet-tooltip.leaflet-interactive{pointer-events:auto}
+</style>
+
+<div class="app">
+  <header class="top"><div class="top-in">
+    <div class="brand">
+      <div class="brand" style="margin-right: auto;">
+  <div>
+    <img src="./masar-logo.png" alt="مسار MASAR"
+         style="display: block; width: 114px; height: auto;">
+   
+  </div>
+</div>
+    </div>
+    <div class="modes" role="group" aria-label="وضع الاستخدام">
+      <button id="mode-an" aria-pressed="true">تقييم المسارات</button>
+      <button id="mode-ag" aria-pressed="false">وضع وكيل الحاويات</button>
+    </div>
+    <div class="feed"><span>تدفق الأحداث المباشر (محاكاة)</span><button class="sw" id="feed-sw" aria-pressed="false" aria-label="تشغيل تدفق الأحداث المحاكى"></button></div>
+   
+  </div></header>
+
+  <div class="stage">
+    <aside class="panel" id="panel">
+
+      <!-- shared route selection -->
+      <section class="card" aria-label="اختيار الرحلة">
+        <h3>١ · اختر ميناء المغادرة والوصول</h3>
+        <div class="row">
+          <div class="grow"><label class="lab" for="from">ميناء المغادرة</label><select id="from"></select></div>
+          <button class="swap" id="swap" aria-label="عكس الاتجاه" title="عكس الاتجاه">⇄</button>
+          <div class="grow"><label class="lab" for="to">ميناء الوصول</label><select id="to"></select></div>
+        </div>
+        <p class="note" id="pairmsg" style="margin:8px 0 0"></p>
+      </section>
+
+      <!-- analysis mode -->
+      <div id="view-an" style="display:contents">
+        <section class="card" aria-label="معايير القرار">
+          <h3>معايير القرار</h3>
+          <span class="lab">أولوية القرار</span>
+          <div class="seg" id="profile">
+            <button data-p="cost" aria-pressed="false">أقل تكلفة</button>
+            <button data-p="bal" aria-pressed="true">متوازن</button>
+            <button data-p="safe" aria-pressed="false">أقل مخاطرة</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div class="grow"><label class="lab" for="cargo">قيمة البضاعة للحاوية 40 قدم ($)</label><input type="number" id="cargo" value="250000" min="10000" step="10000"></div>
+          </div>
+          <div style="margin-top:10px">
+            <label class="lab" for="esc">محاكاة التصعيد في البحر الأحمر وخليج عدن: <b id="esc-v">0</b> نقطة</label>
+            <input type="range" id="esc" min="-30" max="30" value="0" step="1">
+            <div class="row" style="justify-content:space-between"><span class="note">تهدئة</span><span class="note">تصعيد</span></div>
+          </div>
+        </section>
+
+        <div class="card" style="padding:6px 12px 12px">
+          <div class="tabs" role="tablist" id="tabs">
+            <button role="tab" data-t="routes" aria-selected="true">المسارات</button>
+            <button role="tab" data-t="detail" aria-selected="false">تحليل المسار</button>
+            <button role="tab" data-t="be" aria-selected="false">نقطة التعادل</button>
+            <button role="tab" data-t="alerts" aria-selected="false">التنبيهات<span class="dot" id="alert-dot" hidden>0</span></button>
+          </div>
+          <div id="tabbody" style="padding-top:12px;display:grid;gap:12px"></div>
+        </div>
+      </div>
+
+      <!-- agent mode -->
+      <div id="view-ag" style="display:none">
+        <section class="card" aria-label="بيانات الشحنة" style="margin-bottom:12px">
+          <h3>٢ · بيانات الحاويات</h3>
+          <div class="row">
+            <div class="grow"><label class="lab" for="ctype">نوع الحاوية</label>
+              <select id="ctype"><option value="20">20 قدم عادية</option><option value="40" selected>40 قدم مرتفعة</option><option value="rf">40 قدم مبرّدة</option></select></div>
+            <div class="grow"><label class="lab" for="cqty">العدد</label><input type="number" id="cqty" value="12" min="1" max="500"></div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <div class="grow"><label class="lab" for="cval">قيمة البضاعة للحاوية ($)</label><input type="number" id="cval" value="180000" min="5000" step="5000"></div>
+            <div class="grow"><label class="lab" for="cdl">أقصى مدة وصول (يوم)</label><input type="number" id="cdl" value="36" min="10" max="80"></div>
+          </div>
+          <div style="margin-top:10px">
+            <label class="lab" for="crisk">أعلى مستوى مخاطر مقبول: <b id="crisk-v">70</b> من 100</label>
+            <input type="range" id="crisk" min="20" max="95" value="70" step="1">
+          </div>
+          <div style="margin-top:6px"><span class="lab">الترتيب حسب</span>
+            <div class="seg" id="aprofile">
+              <button data-p="cost" aria-pressed="false">التكلفة</button>
+              <button data-p="bal" aria-pressed="true">متوازن</button>
+              <button data-p="safe" aria-pressed="false">الأمان</button>
+            </div></div>
+        </section>
+        <section class="card" aria-label="عروض السفن">
+          <h3>عروض السفن والمسارات المناسبة</h3>
+          <p class="note" style="margin:0 0 10px">أسماء السفن والشركات افتراضية لأغراض العرض. الأسعار والمدد محسوبة من نموذج المحاكاة نفسه.</p>
+          <div id="offers" style="display:grid;gap:10px"></div>
+        </section>
+      </div>
+    </aside>
+
+    <section class="mapwrap" aria-label="الخريطة البحرية التفاعلية">
+      <div id="map" role="application" aria-label="خريطة الممرات البحرية"></div>
+      <div id="revbox"></div>
+      <div class="mctl"><button id="zin" aria-label="تكبير">+</button><button id="zout" aria-label="تصغير">−</button><button id="zfit" aria-label="ملاءمة المسار" style="font-size:13px">◎</button></div>
+      <div class="hint" id="maphint">اضغط على أي مسار في الخريطة لعرض تحليل المخاطر الخاص به</div>
+      <div class="legend" aria-label="مفتاح الخريطة">
+        <div><i style="background:var(--ok)"></i>مخاطر منخفضة</div>
+        <div><i style="background:var(--warn)"></i>متوسطة</div>
+        <div><i style="background:var(--crit)"></i>مرتفعة</div>
+        <div><i style="background:var(--sev)"></i>حرجة</div>
+        <div><span class="zs" style="display:inline-block;background:var(--crit)"></span>منطقة خطر (الحجم = النطاق)</div>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ===== MASAR data · كل الأرقام محاكاة ولا تمثل بيانات سوق حية ===== */
+const PORTS={
+  SHA:{n:'شنغهاي',c:'الصين',ll:[31.2,122.1],reg:'asia'},
+  SIN:{n:'سنغافورة',c:'سنغافورة',ll:[1.25,103.75],reg:'asia'},
+  NSA:{n:'نافا شيفا (مومباي)',c:'الهند',ll:[18.95,72.95],reg:'asia'},
+  JEA:{n:'جبل علي (دبي)',c:'الإمارات',ll:[25.0,55.05],reg:'asia'},
+  RTM:{n:'روتردام',c:'هولندا',ll:[51.95,4.05],reg:'eu'},
+  PIR:{n:'بيريوس',c:'اليونان',ll:[37.94,23.62],reg:'eu'}
+};
+
+/* مناطق الخطر: s = درجة الخطر الأساسية 0-100، r = نصف القطر كم */
+const ZONES={
+  TWS:{n:'مضيق تايوان',ll:[23.5,119.3],r:330,s:40,sh:'تايوان'},
+  MAL:{n:'مضيق ملقا',ll:[3.6,100.6],r:380,s:28,sh:'ملقا'},
+  HOR:{n:'مضيق هرمز',ll:[26.2,56.5],r:300,s:58,sh:'هرمز'},
+  ADN:{n:'خليج عدن',ll:[12.4,48.6],r:420,s:74,sh:'خليج عدن'},
+  RDS:{n:'جنوب البحر الأحمر وباب المندب',ll:[14.6,42.4],r:360,s:82,sh:'باب المندب'},
+  RDN:{n:'شمال البحر الأحمر وقناة السويس',ll:[25.2,35.2],r:420,s:55,sh:'شمال الأحمر'},
+  EMD:{n:'شرق المتوسط',ll:[33.6,31.5],r:380,s:46,sh:'شرق المتوسط'},
+  CAP:{n:'رأس الرجاء الصالح',ll:[-35.2,19.5],r:480,s:12,sh:'الرجاء الصالح'}
+};
+
+/* مقاطع هندسية للمسارات: [خط عرض، خط طول] */
+const SEG={
+  SHA_SG:[[31.2,122.1],[27.5,121.9],[24.4,119.6],[21,117.5],[15,112.8],[9,108.6],[4.5,106.4],[1.7,104.9]],
+  SIN_M:[[1.25,103.75],[1.3,103.2],[2.6,101.6],[5.3,98.6],[6.2,94],[5.6,85],[5.6,80]],
+  M_SUEZ:[[5.6,80],[8,72],[11,62],[12.2,52],[12.3,47.5],[12.6,43.4]],
+  M_CAPE:[[5.6,80],[1,70],[-15,58],[-30,40],[-35.3,21]],
+  NSA_SUEZ:[[18.95,72.95],[15,66.5],[12.3,52],[12.3,47.5],[12.6,43.4]],
+  NSA_CAPE:[[18.95,72.95],[11,67.5],[0,62],[-15,58],[-30,40],[-35.3,21]],
+  JEA_SUEZ:[[25.0,55.05],[26.2,56.6],[24.2,59.8],[19,60.5],[14,56.5],[12.3,52],[12.3,47.5],[12.6,43.4]],
+  JEA_CAPE:[[25.0,55.05],[26.2,56.6],[24.2,59.8],[15,60.5],[0,58],[-15,58],[-30,40],[-35.3,21]],
+  RED:[[12.6,43.4],[14.5,42.3],[20,38.4],[25,35.2],[28.2,33.4],[29.9,32.6],[31.3,32.4]],
+  MED_RTM:[[33.6,28.5],[35.3,22],[36.8,14],[37.2,10],[36.7,3],[36.1,-3],[35.97,-5.5],[36.5,-7.4],[37,-9.5],[43.2,-9.9],[48.5,-5.6],[50.2,-1.6],[51.2,2.0],[51.95,4.05]],
+  MED_PIR:[[33.9,29],[35.4,26],[37.4,24.2],[37.94,23.62]],
+  CAPE_ATL:[[-35.3,21],[-34,17.5],[-28,13],[-12,9],[0,0],[10,-18],[20,-20.5],[30,-14.5],[36,-9.7]],
+  ATL_RTM:[[37,-9.5],[43.2,-9.9],[48.5,-5.6],[50.2,-1.6],[51.2,2.0],[51.95,4.05]],
+  ATL_PIR:[[36,-9.7],[35.97,-5.6],[36.7,0],[37.4,8.5],[37.2,11.5],[36,15],[36.3,20],[37.5,23],[37.94,23.62]]
+};
+
+/* خط الأساس للمسارات بين آسيا وأوروبا (من الآسيوي إلى الأوروبي) */
+function buildAsiaToEu(o,d){
+  const pre = o==='SHA'?SEG.SHA_SG.concat(SEG.SIN_M.slice(0)):
+              o==='SIN'?SEG.SIN_M:null;
+  const suezLeg = o==='NSA'?SEG.NSA_SUEZ:o==='JEA'?SEG.JEA_SUEZ:pre.concat(SEG.M_SUEZ.slice(1));
+  const capeLeg = o==='NSA'?SEG.NSA_CAPE:o==='JEA'?SEG.JEA_CAPE:pre.concat(SEG.M_CAPE.slice(1));
+  const suez = suezLeg.concat(SEG.RED.slice(1), d==='RTM'?SEG.MED_RTM:SEG.MED_PIR);
+  const cape = capeLeg.concat(SEG.CAPE_ATL.slice(1), d==='RTM'?SEG.ATL_RTM:SEG.ATL_PIR);
+  const esc = suez.map((p,i)=> (i>0&&i<suez.length-1)? [p[0]+0.45,p[1]-0.45] : p);
+  return {suez,cape,esc};
+}
+
+/* خطوط اليابسة المبسطة */
+const LAND=[
+ [[36,-5.5],[37,-2],[39,-0.3],[41.3,2.2],[43.3,3.5],[43.2,6],[44.3,8.5],[42.4,11],[41,13],[38.2,15.6],[40,18.4],[41.5,16],[44.2,12.5],[45.5,13],[42,18.5],[40.5,19.5],[39,21],[36.5,22.7],[37.9,24],[40.5,22.9],[39.5,26.3],[37,27.2],[36.5,30],[36.2,34],[36.8,36],[34.5,35.9],[31.3,34.2],[31.2,32.3],[29.9,32.6],[28,34.5],[28.2,34.8],[24,38],[21.5,39.2],[18,41.8],[15,42.6],[12.7,43.5],[12.8,45],[14,48],[15.5,52],[17.3,56],[19,57.8],[22.5,59.8],[24.3,56.7],[26,56.2],[25.4,56.3],[24.5,54.5],[24,51.6],[25.8,51.2],[26,50.2],[27.5,49.5],[29,48.5],[30,48.5],[29.5,50.5],[28,51.5],[27,54],[26.5,56.5],[25.2,61.6],[25.3,64],[25,66.5],[22.6,69],[21,72.7],[19,72.8],[15,74],[10,76.3],[8,77.5],[9.3,79.2],[13,80.3],[16.5,82.2],[20,86.8],[22,89],[21,92],[16.5,94.4],[15.8,97.8],[13,98.4],[8,98.3],[5.8,100.3],[4,100.8],[1.5,103.3],[1.3,103.9],[2.7,104.1],[6,102],[8.5,103],[10.5,107],[13,109.3],[16,108.2],[20.5,106.7],[21.8,108],[21.5,110.5],[23.2,113.5],[25,119],[27,120.5],[30,122],[32,121.8],[35,119.5],[37,122.5],[39,121.5],[39.5,118],[38,117.5],[40.5,124.2],[39,125],[37,126.5],[35,126.3],[34.7,128],[35.5,129.4],[38.5,128.5],[42.5,130.7],[47,138],[60,140],[70,130],[73,110],[77,105],[70,80],[68,70],[69,60],[67,45],[66,34],[70,31],[70.5,28],[69,20],[65,14],[62,5],[58.8,5.5],[58,8],[57.5,10.5],[55,8.5],[54,8.7],[53.5,6],[52.5,4.5],[51.3,3.3],[51,2],[49.6,-1.5],[48.5,-4.7],[47.3,-2.5],[46,-1.2],[43.5,-1.5],[43.5,-8],[43,-9.2],[41,-8.9],[38.7,-9.5],[37,-8.9],[37,-6.5]],
+ [[35.8,-5.8],[35.8,-1],[37,10],[33,11.5],[32.5,15],[31.2,20],[33,22],[31.2,30],[31.3,32.2],[29.9,32.6],[27.8,33.6],[24,35.6],[21,37.2],[18,38.5],[15.5,39.8],[12.7,43.3],[11.5,43.2],[10.5,51.3],[5,48],[0,42.5],[-4.5,39.5],[-10.5,40.5],[-15,40.7],[-20,35],[-26,33],[-30,31],[-34,26],[-34.8,20],[-33,17.8],[-29,16.5],[-23,14.5],[-17,11.8],[-12,13.5],[-6,12.2],[-1,9],[4,9.5],[4.5,7],[6.3,3.5],[5,-2],[4.5,-8],[7,-12.5],[10.5,-15],[14.7,-17.5],[21,-17],[27.5,-13],[32,-9.5],[35.8,-6.3]],
+ [[50.1,-5.5],[51.2,-3],[51.5,0.9],[52.8,1.7],[55,-1.5],[57.5,-1.8],[58.6,-3],[57.5,-6],[55.5,-5.5],[54,-3.2],[52.5,-4.2],[51.5,-5.3]],
+ [[54.2,-6],[55.2,-6.5],[54.5,-8.5],[52,-10],[51.6,-8],[52.2,-6.3]],
+ [[-12,49.3],[-16,50.5],[-25,47],[-25.5,44],[-17,43.8]],
+ [[5.6,95.3],[3.5,98.7],[1,102],[-2,106],[-5.8,105.8],[-5,102],[-1,100],[2,97.5]],
+ [[7,117],[4,118.2],[1,119],[-3.5,116],[-3,111],[1.5,109],[4.5,114]],
+ [[-6,106],[-6.5,111],[-7.8,114.5],[-8.5,114],[-7.5,108],[-7,105.5]],
+ [[18.5,120.5],[14,124],[12,125],[7,126],[7,122],[10,123],[14,120.5]],
+ [[25.2,121.6],[22,120.8],[23,120.1],[25,121]],
+ [[41.3,140.5],[39,142],[35.7,140.8],[34.6,138.8],[33.5,135.8],[34.4,133],[34,131],[35.5,133],[37,137],[39.5,140]],
+ [[9.8,80.1],[7.5,81.8],[6,81],[6.2,80],[8,79.8]]
+];
+
+/* أحداث أمنية افتراضية للمحاكاة، d = أثر على درجة الخطر في كل منطقة */
+const EVENTS=[
+ {id:'e1',k:'up',t:'هجوم بطائرة مسيّرة على ناقلة جنوب البحر الأحمر',d:{RDS:14,ADN:8,RDN:3},sev:'h'},
+ {id:'e2',k:'dn',t:'إعلان وقف إطلاق نار وتراجع حوادث الاستهداف',d:{RDS:-24,ADN:-18,RDN:-10},sev:'l'},
+ {id:'e3',k:'up',t:'احتجاز سفينة في مضيق هرمز',d:{HOR:20},sev:'h'},
+ {id:'e4',k:'up',t:'تحذير ملاحي بعد مناورات قرب مضيق تايوان',d:{TWS:15},sev:'m'},
+ {id:'e5',k:'up',t:'توسيع اللجنة المشتركة للتأمين البحري لمناطق الخطر المدرجة',d:{RDS:6,ADN:6,RDN:8,EMD:4},sev:'m'},
+ {id:'e6',k:'up',t:'مناورات عسكرية وتصاعد توتر في شرق المتوسط',d:{EMD:14},sev:'m'},
+ {id:'e7',k:'dn',t:'عودة تدريجية لخطوط الملاحة إلى باب المندب',d:{RDS:-10,ADN:-10},sev:'l'}
+];
+
+/* تنبيهات افتراضية جاهزة عند التشغيل */
+const SEED_ALERTS=[
+ {z:['RDS','ADN'],sev:'h',t:'بلاغات عن طائرات مسيّرة وزوارق مسلحة قرب مدخل باب المندب',s:'محاكاة · قبل 3 ساعات'},
+ {z:['RDN','EMD'],sev:'m',t:'ازدحام في مدخل قناة السويس وتأخير متوسط 14 ساعة',s:'محاكاة · قبل 9 ساعات'},
+ {z:['HOR'],sev:'m',t:'تحذير ملاحي: تدريبات بحرية في خليج عُمان',s:'محاكاة · أمس'},
+ {z:['MAL'],sev:'l',t:'انخفاض حوادث السطو المسلح في مضيق ملقا للشهر الثالث',s:'محاكاة · قبل يومين'},
+ {z:['CAP'],sev:'l',t:'توقعات بحرية: رياح قوية جنوب أفريقيا تضيف يوماً محتملاً',s:'محاكاة · قبل 3 أيام'},
+ {z:['TWS'],sev:'m',t:'رفع مستوى اليقظة الأمنية في مضيق تايوان',s:'محاكاة · قبل 4 أيام'}
+];
+
+/* سفن افتراضية لوضع وكيل الحاويات */
+const VESSELS=[
+ {id:'v1',v:'نجمة الخليج',c:'الأفق للملاحة',sv:'suez',kn:18,mk:1.06,rel:91,etd:3,cap:'14,000 حاوية'},
+ {id:'v2',v:'دجلة إكسبرس',c:'مجموعة المرفأ',sv:'cape',kn:16,mk:0.97,rel:94,etd:5,cap:'12,500 حاوية'},
+ {id:'v3',v:'الرياح الموسمية',c:'النواخذة للشحن',sv:'esc',kn:17,mk:1.04,rel:89,etd:4,cap:'11,200 حاوية'},
+ {id:'v4',v:'رأس الرجاء ١',c:'بحّار لاين',sv:'cape',kn:15,mk:0.92,rel:96,etd:7,cap:'9,800 حاوية'},
+ {id:'v5',v:'عقيق',c:'سيف البحر',sv:'suez',kn:19.5,mk:1.2,rel:85,etd:2,cap:'8,600 حاوية'},
+ {id:'v6',v:'المنارة',c:'الأفق للملاحة',sv:'esc',kn:16,mk:1.0,rel:92,etd:9,cap:'13,300 حاوية'},
+ {id:'v7',v:'سنام',c:'النواخذة للشحن',sv:'cape',kn:17.5,mk:1.05,rel:90,etd:6,cap:'10,400 حاوية'},
+ {id:'v8',v:'صقر الموج',c:'مجموعة المرفأ',sv:'suez',kn:17,mk:1.0,rel:88,etd:11,cap:'12,000 حاوية'}
+];
+/* ===== محرك التقييم ===== */
+const HULL_FEU=20000;          // قيمة السفينة المنسوبة لكل حاوية 40 قدم ($) (محاكاة)
+const BASE_KN=16, PORT_DAYS=2;
+const LAMBDA={cost:2,bal:12,safe:40};   // تكلفة نقطة المخاطرة لكل حاوية ($)
+const TYPEF={'20':{f:0.6,h:0.5,n:'20 قدم'},'40':{f:1,h:1,n:'40 قدم'},'rf':{f:1.9,h:1,n:'40 قدم مبرّدة'}};
+const RTEMPL={
+  suez:{id:'suez',name:'عبر قناة السويس والبحر الأحمر',short:'السويس',toll:140,fee:0,extra:0,mult:1,dash:false},
+  esc:{id:'esc',name:'السويس بمرافقة بحرية وقافلة منظمة',short:'السويس + مرافقة',toll:140,fee:450,extra:3,mult:0.75,dash:true},
+  cape:{id:'cape',name:'عبر رأس الرجاء الصالح',short:'رأس الرجاء',toll:0,fee:0,extra:0,mult:1,dash:false}
+};
+const ST={
+  from:'SHA',to:'RTM',profile:'bal',cargo:250000,esc:0,
+  scores:Object.fromEntries(Object.entries(ZONES).map(([k,z])=>[k,z.s])),
+  sel:'suez',tab:'routes',mode:'an',alerts:[],pref:null,revCount:0
+};
+
+const R2D=Math.PI/180;
+function hav(a,b){const dLa=(b[0]-a[0])*R2D,dLo=(b[1]-a[1])*R2D;
+  const h=Math.sin(dLa/2)**2+Math.cos(a[0]*R2D)*Math.cos(b[0]*R2D)*Math.sin(dLo/2)**2;
+  return 12742*Math.asin(Math.sqrt(h));}
+function pathKm(p){let s=0;for(let i=1;i<p.length;i++)s+=hav(p[i-1],p[i]);return s;}
+function samplePath(p,step=35){const out=[];for(let i=1;i<p.length;i++){
+  const d=hav(p[i-1],p[i]),n=Math.max(1,Math.ceil(d/step));
+  for(let k=0;k<n;k++){const t=k/n;out.push([p[i-1][0]+(p[i][0]-p[i-1][0])*t,p[i-1][1]+(p[i][1]-p[i-1][1])*t]);}}
+  out.push(p[p.length-1]);return out;}
+function midPoint(p){const L=pathKm(p)/2;let a=0;for(let i=1;i<p.length;i++){const d=hav(p[i-1],p[i]);
+  if(a+d>=L){const t=(L-a)/d;return [p[i-1][0]+(p[i][0]-p[i-1][0])*t,p[i-1][1]+(p[i][1]-p[i-1][1])*t];}a+=d;}return p[0];}
+
+const GEO_CACHE={};
+function pairSupported(f,t){const a=PORTS[f].reg,b=PORTS[t].reg;return f!==t&&a!==b;}
+function getRoutes(f,t){
+  if(!pairSupported(f,t))return null;
+  const key=f+'>'+t; if(GEO_CACHE[key])return GEO_CACHE[key];
+  const asiaFirst=PORTS[f].reg==='asia';
+  const o=asiaFirst?f:t, d=asiaFirst?t:f;
+  const g=buildAsiaToEu(o,d);
+  const list=['suez','esc','cape'].map(id=>{
+    let geo=g[id]; if(!asiaFirst)geo=geo.slice().reverse();
+    const km=pathKm(geo), smp=samplePath(geo), fr={};
+    for(const [zid,z] of Object.entries(ZONES)){
+      let n=0;for(const q of smp)if(hav(q,z.ll)<=z.r)n++;
+      if(n/smp.length>0.012)fr[zid]=n/smp.length;
+    }
+    return Object.assign({},RTEMPL[id],{geo,km,nm:km/1.852,zf:fr,mid:midPoint(geo)});
+  });
+  return (GEO_CACHE[key]=list);
+}
+
+/* درجات الخطر بعد تطبيق شريط التصعيد */
+function effScores(st){
+  const e=st.esc,s={...st.scores};
+  s.RDS+=e;s.ADN+=e*0.8;s.RDN+=e*0.5;
+  for(const k in s)s[k]=Math.max(3,Math.min(98,s[k]));
+  return s;
+}
+const rateOf=s=>0.005+0.75*Math.pow(s/100,2.2);          // نسبة قسط الحرب % من قيمة السفينة
+function levelOf(v){return v<30?{k:'low',n:'منخفض',c:'var(--ok)'}:v<50?{k:'mid',n:'متوسط',c:'var(--warn)'}:v<70?{k:'high',n:'مرتفع',c:'var(--crit)'}:{k:'sev',n:'حرج',c:'var(--sev)'};}
+const pillCls=l=>'l-'+(l.k==='low'?'low':l.k==='mid'?'mid':l.k==='high'?'high':'sev');
+
+function evaluate(r,st,o={}){
+  const sc=effScores(st), kn=o.kn||BASE_KN, cargo=o.cargo??st.cargo, prof=o.profile||st.profile;
+  const tf=TYPEF[o.type||'40'];
+  const zs=Object.keys(r.zf), K=HULL_FEU/100;
+  let rate=0, wsum=0, wavg=0, mx=0;
+  const zrows=[];
+  for(const z of zs){const s=sc[z],rt=rateOf(s);rate+=rt;wsum+=r.zf[z];wavg+=s*r.zf[z];mx=Math.max(mx,s);
+    zrows.push({z,n:ZONES[z].n,s,rt,fr:r.zf[z]});}
+  rate*=r.mult;
+  let risk=zs.length?0.6*mx+0.4*(wavg/wsum):6; if(r.id==='esc')risk*=0.85; risk=Math.round(Math.max(6,Math.min(99,risk)));
+  const seaDays=r.nm/(kn*24), days=seaDays+PORT_DAYS+r.extra;
+  const dayCost=60+38*Math.pow(kn/16,3);
+  const freight=(seaDays+PORT_DAYS)*dayCost*tf.f*(o.mk||1);
+  const toll=r.toll*tf.f, fee=r.fee;
+  const hullWar=rate*K*tf.h, cargoWar=rate*cargo*0.0015;
+  const capital=cargo*0.08/365*days;
+  const riskPen=risk*LAMBDA[prof];
+  const war=hullWar+cargoWar;
+  const direct=freight+toll+fee+war;               // السعر المباشر للحاوية
+  const G=direct+capital+riskPen;
+  return {id:r.id,rate,risk,level:levelOf(risk),days,seaDays,freight,toll,fee,hullWar,cargoWar,war,capital,riskPen,direct,G,zrows,kn};
+}
+function evalAll(st){const rs=getRoutes(st.from,st.to);if(!rs)return null;
+  const ev=rs.map(r=>({r,e:evaluate(r,st)}));
+  const best=ev.reduce((a,b)=>b.e.G<a.e.G?b:a);
+  ev.forEach(x=>x.best=x===best);return {ev,best:best.r.id};}
+
+/* نقطة التعادل: G(x) = A + B·x حيث x = قسط الحرب على مسار السويس (%) */
+function breakEven(st,ev){
+  const K=HULL_FEU/100+st.cargo*0.0015;
+  const get=id=>ev.find(x=>x.r.id===id);
+  const s=get('suez'),e=get('esc'),c=get('cape');
+  const L=(x,mult,fixedRate)=>{const o=x.e;return {A:o.G-o.war,B:mult*K,cur:o.rate,fixed:fixedRate};};
+  const ls={suez:L(s,1),esc:L(e,0.75),cape:{A:c.e.G-c.e.war+c.e.war,B:0,cur:c.e.rate}};
+  const cross=(a,b)=>{const d=a.B-b.B;if(Math.abs(d)<1e-9)return null;const x=(b.A-a.A)/d;return x>=0?x:null;};
+  const xs={sc:cross(ls.suez,ls.cape),ec:cross(ls.esc,ls.cape),se:cross(ls.suez,ls.esc)};
+  return {K,ls,xs,xNow:s.e.rate};
+}
+/* ===== الواجهة ===== */
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const usd=n=>'$'+fmt(n);
+const pct=x=>x.toFixed(2)+'%';
+const dayf=d=>Math.round(d);
+const NS='http://www.w3.org/2000/svg';
+function toast(t){const e=$('toast');e.textContent=t;e.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>e.hidden=true,3600);}
+function dateIn(n){return new Date(2026,10,8+n).toLocaleDateString('ar-u-nu-latn',{day:'numeric',month:'long'});}
+function pointAt(p,fr){const L=pathKm(p)*fr;let a=0;for(let i=1;i<p.length;i++){const d=hav(p[i-1],p[i]);
+  if(a+d>=L){const t=(L-a)/d;return [p[i-1][0]+(p[i][0]-p[i-1][0])*t,p[i-1][1]+(p[i][1]-p[i-1][1])*t];}a+=d;}return p[0];}
+const LBLFR={suez:0.6,esc:0.4,cape:0.5};
+const AG={type:'40',qty:12,val:180000,dl:36,risk:70,profile:'bal',sel:null};
+
+/* ---------- الخريطة ---------- */
+const map=L.map('map',{zoomControl:false,attributionControl:false,minZoom:2,maxZoom:7,zoomSnap:0.25,
+  maxBounds:[[-52,-45],[74,165]],maxBoundsViscosity:0.9}).setView([22,62],3);
+for(let lat=-40;lat<=70;lat+=10)L.polyline([[lat,-45],[lat,165]],{className:'grat',weight:1,interactive:false,color:'#888'}).addTo(map);
+for(let lon=-40;lon<=160;lon+=10)L.polyline([[-52,lon],[74,lon]],{className:'grat',weight:1,interactive:false,color:'#888'}).addTo(map);
+LAND.forEach(p=>L.polygon(p,{className:'land',weight:1,interactive:false,smoothFactor:0.4}).addTo(map));
+const zoneLayer=L.layerGroup().addTo(map), routeLayer=L.layerGroup().addTo(map), portLayer=L.layerGroup().addTo(map);
+const styleEl=document.createElement('style');
+styleEl.textContent='.land{fill:var(--land);fill-opacity:1;stroke:var(--coast)}.grat{stroke:var(--grid);fill:none}';
+document.head.appendChild(styleEl);
+function paint(layer,o){const el=layer.getElement&&layer.getElement();if(!el)return;for(const k in o)el.style[k]=o[k];}
+
+function fitRoutes(){const rs=getRoutes(ST.from,ST.to);if(!rs)return;
+  const b=L.latLngBounds([]);rs.forEach(r=>r.geo.forEach(p=>b.extend(p)));
+  map.fitBounds(b,{padding:[48,48],maxZoom:5,animate:true});}
+
+function renderMap(){
+  zoneLayer.clearLayers();routeLayer.clearLayers();portLayer.clearLayers();
+  const sc=effScores(ST);
+  for(const [id,z] of Object.entries(ZONES)){
+    const lv=levelOf(sc[id]);
+    const c=L.circle(z.ll,{radius:z.r*1000,weight:1.5,dashArray:'5 5',fillOpacity:0.2,interactive:false}).addTo(zoneLayer);
+    paint(c,{stroke:lv.c,fill:lv.c});
+    L.marker(z.ll,{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="zl">${z.sh}<br><b style="color:${lv.c}">${Math.round(sc[id])}</b></div>`})}).addTo(zoneLayer);
+  }
+  const ea=evalAll(ST);
+  if(ea){
+    ea.ev.forEach(({r,e,best})=>{
+      const sel=ST.sel===r.id, col=e.level.c;
+      const hit=L.polyline(r.geo,{weight:22,opacity:0.01,color:'#000'}).addTo(routeLayer);
+      hit.on('click',()=>selectRoute(r.id,true));
+      hit.bindTooltip(`${r.name}<br>مخاطر: ${e.level.n} (${e.risk}) · ${dayf(e.days)} يوم · ${usd(e.direct)}`,{sticky:true});
+      const line=L.polyline(r.geo,{weight:sel?6:3.5,opacity:sel?1:0.85,lineCap:'round',lineJoin:'round',interactive:false,
+        dashArray:(r.dash&&!sel)?'8 8':null}).addTo(routeLayer);
+      paint(line,{stroke:col,filter:sel?'drop-shadow(0 0 4px '+col+')':'none'});
+      const el=line.getElement(); if(el){el.classList.toggle('flow',sel);}
+      const lp=pointAt(r.geo,LBLFR[r.id]);
+      const m=L.marker(lp,{icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="rl${sel?' sel':''}">${r.short} · ${dayf(e.days)} يوم${best?'<em>★ الأفضل</em>':''}</div>`})}).addTo(routeLayer);
+      m.on('click',()=>selectRoute(r.id,true));
+    });
+  }
+  for(const [id,p] of Object.entries(PORTS)){
+    const on=id===ST.from||id===ST.to;
+    L.marker(p.ll,{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="pt${on?' on':''}"><i></i>${on||true?`<span style="${on?'':'opacity:.7;font-weight:500'}">${p.n}${id===ST.from?' (مغادرة)':id===ST.to?' (وصول)':''}</span>`:''}</div>`})}).addTo(portLayer);
+  }
+}
+
+/* ---------- حالة عامة وتحديث ---------- */
+function selectRoute(id,fromMap){ST.sel=id;if(ST.mode==='an'){ST.tab='detail';}renderAll();
+  if(fromMap&&window.innerWidth<=900)$('panel').scrollIntoView({behavior:'smooth'});}
+
+function fireReversal(oldId,newId,cause){
+  const ea=evalAll(ST);const g=id=>ea.ev.find(x=>x.r.id===id);
+  const A=g(oldId),B=g(newId);const dG=A.e.G-B.e.G;
+  const msg=`تحوّلت التوصية من «${A.r.short}» إلى «${B.r.short}»`;
+  const det=`${cause}. المسار الجديد أوفر بنحو ${usd(dG)} للحاوية بعد احتساب المخاطر.`;
+  $('revbox').innerHTML=`<div class="rev" role="alert"><button aria-label="إغلاق" id="revx">×</button><b>⚠ تنبيه انعكاس: ${msg}</b><span>${det}</span></div>`;
+  $('revx').onclick=()=>$('revbox').innerHTML='';
+  ST.revCount++;ST.alerts.unshift({z:[],sev:'h',t:`انعكاس التوصية: ${A.r.short} ← ${B.r.short}`,s:det,rev:true});
+  toast('تنبيه انعكاس: تغيّر المسار الأفضل');
+}
+function recompute(source,cause){
+  const ea=evalAll(ST);if(!ea){renderAll();return;}
+  if(source==='event'&&ST.pref&&ST.pref!==ea.best)fireReversal(ST.pref,ea.best,cause);
+  else if(source==='event'&&ST.pref===ea.best&&$('revbox').innerHTML&&!$('revbox').querySelector('.ok')){/* keep */}
+  ST.pref=ea.best;
+  if(!ST.sel||!ea.ev.some(x=>x.r.id===ST.sel))ST.sel=ea.best;
+  renderAll();
+}
+function applyEvent(ev,auto){
+  for(const z in ev.d)ST.scores[z]=Math.max(3,Math.min(98,ST.scores[z]+ev.d[z]));
+  ST.alerts.unshift({z:Object.keys(ev.d),sev:ev.sev,t:ev.t,s:(auto?'تدفق مباشر (محاكاة)':'حدث مُحاكى')+' · الآن'});
+  recompute('event',ev.t);
+  toast((ev.k==='up'?'تصعيد: ':'تهدئة: ')+ev.t);
+}
+
+/* ---------- رسوم SVG ---------- */
+function gauge(v,lv){
+  const arc=(a,b)=>{const p=t=>[100+80*Math.cos((180-t*1.8)*R2D),100-80*Math.sin((180-t*1.8)*R2D)];
+    const [x0,y0]=p(a),[x1,y1]=p(b);return `M${x0.toFixed(1)} ${y0.toFixed(1)} A80 80 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;};
+  const ang=(180-v*1.8)*R2D, nx=100+62*Math.cos(ang), ny=100-62*Math.sin(ang);
+  return `<svg viewBox="0 0 200 124" role="img" aria-label="مؤشر المخاطر ${v} من 100" style="width:100%;max-width:240px;display:block;margin:auto">
+  <path d="${arc(0,30)}" fill="none" style="stroke:var(--ok)" stroke-width="14"/>
+  <path d="${arc(30,50)}" fill="none" style="stroke:var(--warn)" stroke-width="14"/>
+  <path d="${arc(50,70)}" fill="none" style="stroke:var(--crit)" stroke-width="14"/>
+  <path d="${arc(70,100)}" fill="none" style="stroke:var(--sev)" stroke-width="14"/>
+  <line x1="100" y1="100" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" style="stroke:var(--ink)" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="100" cy="100" r="6" style="fill:var(--ink)"/>
+  <text x="100" y="92" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:26px">${v}</text>
+  <text x="100" y="120" text-anchor="middle" style="fill:${lv.c};font-weight:600;font-size:13px">${lv.n}</text></svg>`;
+}
+function stackBars(ea){
+  const mx=Math.max(...ea.ev.map(x=>x.e.direct+x.e.capital));
+  return ea.ev.map(({r,e,best})=>{
+    const seg=[['var(--accent)',e.freight+e.toll+e.fee,'النقل'],['var(--crit)',e.war,'قسط الحرب'],['var(--muted)',e.capital,'رأس المال']];
+    const bars=seg.map(([c,v])=>`<span title="${usd(v)}" style="display:block;height:100%;width:${(v/mx*100).toFixed(2)}%;background:${c}"></span>`).join('');
+    return `<div style="display:grid;gap:3px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${r.short}${best?' ★':''}</span><b>${usd(e.direct+e.capital)}</b></div>
+      <div style="display:flex;height:14px;border-radius:5px;overflow:hidden;background:var(--panel2)">${bars}</div></div>`;}).join('')+
+    `<div class="row" style="gap:12px;font-size:11.5px;color:var(--muted)"><span><i style="display:inline-block;width:9px;height:9px;background:var(--accent);margin-inline-end:4px"></i>النقل والرسوم</span><span><i style="display:inline-block;width:9px;height:9px;background:var(--crit);margin-inline-end:4px"></i>قسط تأمين الحرب</span><span><i style="display:inline-block;width:9px;height:9px;background:var(--muted);margin-inline-end:4px"></i>كلفة رأس المال للبضاعة</span></div>`;
+}
+function beChart(be){
+  const W=400,H=240,m={l:52,r:14,t:16,b:34};
+  const fin=[be.xs.sc,be.xs.ec,be.xs.se].filter(v=>v!=null&&isFinite(v)&&v<=14);
+  const xmax=Math.min(12,Math.max(4,1.35*Math.max(be.xNow,...fin,0.5)));
+  const ys=[];for(const k of ['suez','esc','cape']){const l=be.ls[k];ys.push(l.A,l.A+l.B*xmax);}
+  const y0=Math.floor(Math.min(...ys)/500)*500-250,y1=Math.ceil(Math.max(...ys)/500)*500+250;
+  const X=x=>m.l+(x/xmax)*(W-m.l-m.r), Y=y=>H-m.b-((y-y0)/(y1-y0))*(H-m.t-m.b);
+  let g='';
+  const yt=5;for(let i=0;i<=yt;i++){const v=y0+(y1-y0)*i/yt;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)"/><text x="${m.l-6}" y="${Y(v)+4}" text-anchor="end" font-size="10.5" style="fill:var(--muted)">${fmt(v)}</text>`;}
+  const step=xmax>8?2:1;for(let x=0;x<=xmax+1e-9;x+=step){g+=`<text x="${X(x)}" y="${H-m.b+16}" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">${x}%</text>`;}
+  const cols={suez:'var(--accent)',esc:'var(--warn)',cape:'var(--ink)'};
+  for(const k of ['suez','esc','cape']){const l=be.ls[k];g+=`<line x1="${X(0)}" y1="${Y(l.A)}" x2="${X(xmax)}" y2="${Y(l.A+l.B*xmax)}" style="stroke:${cols[k]}" stroke-width="2.6" ${k==='esc'?'stroke-dasharray="6 4"':''}/>`;}
+  const xn=X(be.xNow);g+=`<line x1="${xn}" x2="${xn}" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--crit)" stroke-dasharray="3 4" stroke-width="1.6"/><text x="${xn+(xn>W-90?-5:5)}" y="${m.t+10}" text-anchor="${xn>W-90?'end':'start'}" font-size="11" font-weight="600" style="fill:var(--crit)">الحالي ${be.xNow.toFixed(2)}%</text>`;
+  const pts=[[be.xs.sc,be.ls.cape.A,'س/ر'],[be.xs.ec,be.ls.cape.A,'م/ر'],[be.xs.se,null,'س/م']];
+  pts.forEach(([x,y,lb],i)=>{if(x==null||x>xmax)return;const yy=y!=null?y:be.ls.suez.A+be.ls.suez.B*x;
+    g+=`<circle cx="${X(x)}" cy="${Y(yy)}" r="5" style="fill:var(--panel);stroke:var(--ink)" stroke-width="2"/><text x="${X(x)}" y="${Y(yy)-9-(i%2)*10}" text-anchor="middle" font-size="10.5" font-weight="600" style="fill:var(--ink)">${lb} ${x.toFixed(2)}%</text>`;});
+  g+=`<text x="${(m.l+W-m.r)/2}" y="${H-3}" text-anchor="middle" font-size="11" style="fill:var(--muted)">قسط الحرب على مسار السويس (% من قيمة السفينة)</text>`;
+  g+=`<text transform="translate(12 ${(m.t+H-m.b)/2}) rotate(-90)" text-anchor="middle" font-size="11" style="fill:var(--muted)">التكلفة الإجمالية للحاوية ($)</text>`;
+  return `<div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:340px;display:block" role="img" aria-label="رسم نقطة التعادل بين المسارات">${g}</svg></div>
+  <div class="row" style="gap:14px;font-size:12px"><span><i style="display:inline-block;width:18px;height:3px;background:var(--accent);margin-inline-end:5px;vertical-align:middle"></i>السويس</span><span><i style="display:inline-block;width:18px;height:3px;background:var(--warn);margin-inline-end:5px;vertical-align:middle"></i>السويس + مرافقة</span><span><i style="display:inline-block;width:18px;height:3px;background:var(--ink);margin-inline-end:5px;vertical-align:middle"></i>رأس الرجاء</span></div>`;
+}
+
+/* ---------- نصوص مساعدة ---------- */
+function marginInfo(ea,be){
+  const sorted=ea.ev.slice().sort((a,b)=>a.e.G-b.e.G);
+  const b=sorted[0].r.id,c=sorted[1].r.id;
+  const key=(x,y)=>({'suez|cape':be.xs.sc,'cape|suez':be.xs.sc,'esc|cape':be.xs.ec,'cape|esc':be.xs.ec,'suez|esc':be.xs.se,'esc|suez':be.xs.se})[x+'|'+y];
+  const x=key(b,c);const nm=id=>RTEMPL[id].short;
+  if(x==null||!isFinite(x))return {txt:`«${nm(b)}» هو الأفضل ولا توجد نقطة تعادل ضمن النطاق المعقول مع «${nm(c)}».`,x:null,b,c};
+  const Bb=be.ls[b].B,Bc=be.ls[c].B;
+  if(Bb>Bc){return {txt:`يبقى «${nm(b)}» الأفضل ما دام قسط الحرب أقل من ${x.toFixed(2)}%. الحالي ${be.xNow.toFixed(2)}% وهامش الأمان ${Math.max(0,x-be.xNow).toFixed(2)} نقطة مئوية.`,x,b,c,margin:x-be.xNow};}
+  return {txt:`يبقى «${nm(b)}» الأفضل ما دام قسط الحرب أعلى من ${x.toFixed(2)}%. إذا انخفض القسط عن ذلك ينقلب القرار لصالح «${nm(c)}».`,x,b,c,margin:be.xNow-x};
+}
+function relevantAlerts(r){const zs=Object.keys(r.zf);return ST.alerts.filter(a=>a.rev||a.z.some(z=>zs.includes(z)));}
+function alertHtml(a){return `<div class="al sev-${a.sev}"><b>${a.t}</b><span>${a.s}</span></div>`;}
+/* ===== عرض التبويبات ===== */
+function tabRoutes(ea,be){
+  const mi=marginInfo(ea,be);
+  const cards=ea.ev.map(({r,e,best})=>`
+    <button class="rc" data-r="${r.id}" aria-pressed="${ST.sel===r.id}">
+      <div class="rc-h"><b>${r.name}</b>${best?'<span class="pill best">الأفضل</span>':''}<span class="pill ${pillCls(e.level)}">مخاطر ${e.level.n} · ${e.risk}</span></div>
+      <div class="kv">
+        <div><small>تكلفة الشحن</small><strong>${usd(e.freight+e.toll+e.fee)}</strong></div>
+        <div><small>قسط الحرب</small><strong>${usd(e.war)}</strong></div>
+        <div><small>مدة العبور</small><strong>${dayf(e.days)} يوم</strong></div>
+      </div>
+      <div class="note">${fmt(r.nm)} ميل بحري · قسط الحرب ${pct(e.rate)} من قيمة السفينة</div>
+    </button>`).join('');
+  return `<div class="routes">${cards}</div>
+    <div class="al sev-${mi.margin!=null&&mi.margin<0.4?'m':'l'}"><b>هامش الأمان قبل انعكاس التوصية</b><span>${mi.txt}</span></div>
+    <p class="note" style="margin:0">التكاليف لحاوية 40 قدم. «الأفضل» يعتمد على التكلفة الكلية: النقل والرسوم وقسط الحرب وكلفة رأس المال، مع غرامة مخاطرة وفق أولوية القرار.</p>`;
+}
+function tabDetail(ea,be){
+  const x=ea.ev.find(v=>v.r.id===ST.sel)||ea.ev[0],{r,e}=x;
+  const others=ea.ev.filter(v=>v!==x);
+  const zr=e.zrows.slice().sort((a,b)=>b.s-a.s).map(z=>{const l=levelOf(z.s);
+    return `<div style="display:grid;gap:3px"><div style="display:flex;justify-content:space-between;font-size:12.5px;gap:8px"><span>${z.n}</span><span style="color:var(--muted)">قسط ${pct(z.rt*r.mult)}</span></div>
+    <div style="height:9px;border-radius:5px;background:var(--panel2);overflow:hidden"><div style="height:100%;width:${z.s}%;background:${l.c}"></div></div></div>`;}).join('')||'<span class="note">لا يمر المسار بمناطق خطر مرصودة.</span>';
+  const mx=Math.max(...e.zrows.map(z=>z.s),0);
+  const inc=Math.round(mx/7), delay=Math.round(mx/6);
+  const cover=mx>=70?'محدودة وبشروط إضافية':mx>=50?'متاحة بقسط مرتفع':'متاحة بشروط عادية';
+  const rows=others.map(o=>{const dC=(o.e.direct)-e.direct,dD=o.e.days-e.days,dR=o.e.risk-e.risk;
+    const c=v=>v>0?'up':v<0?'down':'';const s=v=>(v>0?'+':'')+fmt(v);
+    return `<tr><td>${o.r.short}</td><td class="${c(dC)}">${s(dC)}$</td><td class="${c(dD)}">${(dD>0?'+':'')+dD.toFixed(1)} يوم</td><td class="${dR>0?'up':dR<0?'down':''}">${s(dR)}</td></tr>`;}).join('');
+  const al=relevantAlerts(r).slice(0,3).map(alertHtml).join('')||'<span class="note">لا تنبيهات مرتبطة بهذا المسار.</span>';
+  return `<div><div class="h">${r.name} ${x.best?'<span class="pill best">الأفضل</span>':''}</div>
+    <div class="note">${PORTS[ST.from].n} ← ${PORTS[ST.to].n}</div></div>
+    ${gauge(e.risk,e.level)}
+    <div class="tiles">
+      <div class="tile"><small>مستوى المخاطر الأمنية</small><strong style="color:${e.level.c}">${e.level.n}</strong><br><em>${e.risk} من 100</em></div>
+      <div class="tile"><small>قسط تأمين الحرب</small><strong>${pct(e.rate)}</strong><br><em>${usd(e.war)} للحاوية (هيكل + بضاعة)</em></div>
+      <div class="tile"><small>تكلفة الشحن التقديرية</small><strong>${usd(e.freight+e.toll+e.fee)}</strong><br><em>الإجمالي مع التأمين ${usd(e.direct)}</em></div>
+      <div class="tile"><small>مدة العبور المتوقعة</small><strong>${dayf(e.days)} يوم</strong><br><em>${e.seaDays.toFixed(1)} يوم إبحار + ${PORT_DAYS+r.extra} موانئ</em></div>
+    </div>
+    <div><div class="h">مؤشرات الحرب والجيوسياسة <span class="chip">محاكاة</span></div>
+      <div class="tiles">
+        <div class="tile"><small>حوادث استهداف (30 يوماً)</small><strong>${inc}</strong></div>
+        <div class="tile"><small>تأخير متوقع عند المضائق</small><strong>${delay} ساعة</strong></div>
+      </div>
+      <p class="note" style="margin:6px 0 0">تغطية تأمين الحرب: ${cover}.</p></div>
+    <div><div class="h">درجة الخطر حسب المنطقة</div><div style="display:grid;gap:8px">${zr}</div></div>
+    <div><div class="h">تكلفة المسارات مقارنة بعضها ببعض</div><div style="display:grid;gap:9px">${stackBars(ea)}</div></div>
+    <div><div class="h">مقارنة مع المسارات البديلة</div>
+      <div class="scroll-x"><table class="tbl"><thead><tr><th>البديل</th><th>فرق التكلفة</th><th>فرق المدة</th><th>فرق المخاطر</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="note" style="margin:6px 0 0">الأخضر يعني أن البديل أفضل من المسار المحدد في هذا المؤشر.</p></div>
+    <div><div class="h">تنبيهات وتطورات ذات صلة</div><div class="evs">${al}</div></div>`;
+}
+function tabBE(ea,be){
+  const mi=marginInfo(ea,be);
+  const nm=id=>RTEMPL[id].short;
+  const rowTxt=(x,a,b,aLow)=>x==null?'لا يوجد تعادل':`${nm(a)} أرخص من ${nm(b)} ${aLow?'حتى':'فوق'} ${x.toFixed(2)}%`;
+  const r1=be.xs.sc, r2=be.xs.ec, r3=be.xs.se;
+  const st=(x)=>x==null?'—':(be.xNow<x?'أقل من نقطة التعادل':'أعلى من نقطة التعادل');
+  return `<div class="al sev-${mi.margin!=null&&mi.margin<0.4?'h':'l'}"><b>الخلاصة</b><span>${mi.txt}</span></div>
+    ${beChart(be)}
+    <div class="scroll-x"><table class="tbl"><thead><tr><th>المقارنة</th><th>نقطة التعادل</th><th>الوضع الحالي</th></tr></thead><tbody>
+      <tr><td>السويس / رأس الرجاء</td><td>${r1==null?'—':r1.toFixed(2)+'%'}</td><td>${st(r1)}</td></tr>
+      <tr><td>السويس + مرافقة / رأس الرجاء</td><td>${r2==null?'—':r2.toFixed(2)+'%'}</td><td>${st(r2)}</td></tr>
+      <tr><td>السويس / السويس + مرافقة</td><td>${r3==null?'—':r3.toFixed(2)+'%'}</td><td>${st(r3)}</td></tr>
+    </tbody></table></div>
+    <p class="note" style="margin:0">كل خط يبيّن التكلفة الإجمالية للحاوية عند كل مستوى لقسط الحرب على مسار السويس. المرافقة البحرية تخفّض القسط بنسبة 25% وتضيف رسماً إضافياً وثلاثة أيام انتظار. تبقى غرامة المخاطرة ثابتة عند قيمتها الحالية عند رسم الخطوط.</p>
+    <div class="al"><b>ما الذي يحرّك التعادل؟</b><span>ارتفاع قيمة البضاعة يرفع أثر القسط، وانخفاض أسعار الوقود يقلّص ميزة السويس. جرّب شريط التصعيد أو الأحداث المحاكاة لترى انتقال الخط الحالي عبر نقطة التعادل.</span></div>`;
+}
+function tabAlerts(ea){
+  const evs=EVENTS.map(ev=>`<div class="ev"><span>${ev.k==='up'?'▲':'▼'} ${ev.t}</span><button class="btn sm" data-ev="${ev.id}">تطبيق</button></div>`).join('');
+  const rev=ST.alerts.filter(a=>a.rev);
+  const rv=rev.length?rev.map(alertHtml).join(''):'<span class="note">لم تنعكس التوصية بعد. اضغط على حدث تصعيدي أدناه أو شغّل تدفق الأحداث.</span>';
+  const all=ST.alerts.filter(a=>!a.rev).slice(0,12).map(alertHtml).join('');
+  return `<div><div class="h">سجل تنبيهات الانعكاس</div><div class="evs">${rv}</div></div>
+    <div><div class="h">محاكاة حدث أمني <button class="btn sm" data-act="reset" style="margin-inline-start:auto">إعادة الضبط</button></div><div class="evs">${evs}</div></div>
+    <div><div class="h">آخر التطورات الأمنية <span class="chip">محاكاة</span></div><div class="evs">${all}</div></div>`;
+}
+function renderTabs(){
+  const ea=evalAll(ST);const body=$('tabbody');
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===ST.tab));
+  const dot=$('alert-dot');dot.hidden=!ST.revCount;dot.textContent=ST.revCount;
+  if(!ea){body.innerHTML='';return;}
+  const be=breakEven(ST,ea.ev);
+  body.innerHTML=ST.tab==='routes'?tabRoutes(ea,be):ST.tab==='detail'?tabDetail(ea,be):ST.tab==='be'?tabBE(ea,be):tabAlerts(ea);
+}
+
+/* ---------- وضع وكيل الحاويات ---------- */
+function renderOffers(){
+  const rs=getRoutes(ST.from,ST.to),box=$('offers');
+  if(!rs){box.innerHTML='<p class="note">اختر ميناء آسيوياً وميناءً أوروبياً لعرض الخيارات.</p>';return;}
+  const tf=TYPEF[AG.type];
+  const list=VESSELS.map(v=>{
+    const r=rs.find(x=>x.id===v.sv);
+    const e=evaluate(r,ST,{kn:v.kn,cargo:AG.val,profile:AG.profile,type:AG.type,mk:v.mk});
+    const total=e.days+v.etd;
+    const okT=total<=AG.dl,okR=e.risk<=AG.risk;
+    const score=e.direct+e.capital+e.riskPen;
+    return {v,r,e,total,okT,okR,ok:okT&&okR,score};
+  }).sort((a,b)=>(b.ok-a.ok)||(a.score-b.score));
+  const rec=list.find(x=>x.ok);
+  box.innerHTML=(rec?'':'<div class="al sev-h"><b>لا يوجد خيار يحقق كل الشروط</b><span>خفّف مدة الوصول أو ارفع حدّ المخاطر المقبول لعرض خيارات مناسبة.</span></div>')+
+  list.map(o=>{const isRec=o===rec;
+    return `<div class="offer${isRec?' rec':''}${o.ok?'':' no'}">
+      <div class="rc-h"><b>${o.v.v}</b>${isRec?'<span class="pill best">الموصى به</span>':''}<span class="pill ${pillCls(o.e.level)}">مخاطر ${o.e.level.n} · ${o.e.risk}</span></div>
+      <div class="note">${o.v.c} · سعة ${o.v.cap} · ${o.r.short} · ${o.v.kn} عقدة</div>
+      <div class="kv">
+        <div><small>سعر الحاوية</small><strong>${usd(o.e.direct)}</strong></div>
+        <div><small>الإجمالي (${AG.qty})</small><strong>${usd(o.e.direct*AG.qty)}</strong></div>
+        <div><small>الوصول</small><strong>${dayf(o.total)} يوم</strong></div>
+      </div>
+      <div class="chips"><span class="chip">إبحار ${dateIn(o.v.etd)}</span><span class="chip">قسط الحرب ${usd(o.e.war)}</span><span class="chip">انتظام ${o.v.rel}%</span>
+        <span class="chip ${o.okT?'g':'r'}">${o.okT?'ضمن الموعد':'يتجاوز الموعد بـ '+dayf(o.total-AG.dl)+' يوم'}</span>
+        <span class="chip ${o.okR?'g':'r'}">${o.okR?'ضمن حد المخاطر':'يتجاوز حد المخاطر'}</span></div>
+      <button class="btn" data-vr="${o.r.id}">عرض المسار على الخريطة</button></div>`;}).join('');
+}
+
+/* ---------- تجميع ---------- */
+function renderAll(){
+  const ok=pairSupported(ST.from,ST.to);
+  $('pairmsg').textContent=ok?'':'النسخة التجريبية تغطي الرحلات بين الموانئ الآسيوية والأوروبية. اختر ميناءً من كل جهة.';
+  $('view-an').style.display=ok?'contents':'none';
+  renderMap();
+  if(ST.mode==='an'){renderTabs();}else{renderOffers();}
+  if(!ok){$('view-ag').style.display=ST.mode==='ag'?'block':'none';}
+}
+function setMode(m){ST.mode=m;
+  $('mode-an').setAttribute('aria-pressed',m==='an');$('mode-ag').setAttribute('aria-pressed',m==='ag');
+  $('view-an').style.display=m==='an'&&pairSupported(ST.from,ST.to)?'contents':'none';
+  $('view-ag').style.display=m==='ag'?'block':'none';
+  $('maphint').textContent=m==='an'?'اضغط على أي مسار في الخريطة لعرض تحليل المخاطر الخاص به':'اختر عرضاً لرؤية مساره على الخريطة';
+  renderAll();setTimeout(()=>{map.invalidateSize();fitRoutes();},60);
+}
+function updateDestinations(from, preferredTo) {
+  const destinations = Object.entries(PORTS).filter(([id]) =>
+    pairSupported(from, id)
+  );
+
+  const select = $('to');
+  select.replaceChildren();
+
+  for (const [id, port] of destinations) {
+    select.add(new Option(`${port.n} · ${port.c}`, id));
+  }
+
+  select.value = destinations.some(([id]) => id === preferredTo)
+    ? preferredTo
+    : destinations[0][0];
+
+  return select.value;
+}
+
+function setPair(f, t) {
+  ST.from = f;
+  ST.to = updateDestinations(f, t);
+  $('from').value = f;
+
+  const result = evalAll(ST);
+  ST.pref = result.best;
+  ST.sel = result.best;
+  ST.tab = 'routes';
+  $('revbox').innerHTML = '';
+
+  renderAll();
+  setTimeout(() => {
+    map.invalidateSize();
+    fitRoutes();
+  }, 40);
+}
+/* ---------- ربط الأحداث ---------- */
+(function init(){
+  const opts=Object.entries(PORTS).map(([k,p])=>`<option value="${k}">${p.n} · ${p.c}</option>`).join('');
+$('from').innerHTML = opts;
+$('from').value = ST.from;
+ST.to = updateDestinations(ST.from, ST.to);
+  $('from').onchange=e=>setPair(e.target.value,ST.to);
+  $('to').onchange=e=>setPair(ST.from,e.target.value);
+  $('swap').onclick=()=>setPair(ST.to,ST.from);
+  $('mode-an').onclick=()=>setMode('an');$('mode-ag').onclick=()=>setMode('ag');
+  document.querySelectorAll('#profile button').forEach(b=>b.onclick=()=>{ST.profile=b.dataset.p;
+    document.querySelectorAll('#profile button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    const ea=evalAll(ST);if(ea){ST.pref=ea.best;}renderAll();});
+  $('cargo').oninput=e=>{ST.cargo=Math.max(10000,+e.target.value||250000);const ea=evalAll(ST);if(ea)ST.pref=ea.best;renderAll();};
+  $('esc').oninput=e=>{ST.esc=+e.target.value;$('esc-v').textContent=(ST.esc>0?'+':'')+ST.esc;
+    recompute('event',ST.esc>0?'ارتفع مستوى التصعيد في البحر الأحمر وخليج عدن':'انخفض مستوى التصعيد في البحر الأحمر وخليج عدن');};
+  $('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;ST.tab=b.dataset.t;renderTabs();};
+  $('tabbody').onclick=e=>{
+    const c=e.target.closest('[data-r]');if(c){ST.sel=c.dataset.r;ST.tab='detail';renderAll();return;}
+    const ev=e.target.closest('[data-ev]');if(ev){applyEvent(EVENTS.find(x=>x.id===ev.dataset.ev),false);return;}
+    if(e.target.closest('[data-act="reset"]')){ST.scores=Object.fromEntries(Object.entries(ZONES).map(([k,z])=>[k,z.s]));
+      ST.esc=0;$('esc').value=0;$('esc-v').textContent='0';ST.alerts=SEED_ALERTS.map(a=>({...a}));ST.revCount=0;$('revbox').innerHTML='';
+      const ea=evalAll(ST);ST.pref=ea?ea.best:null;ST.sel=ea?ea.best:null;renderAll();toast('أُعيد ضبط المحاكاة');}
+  };
+  $('zin').onclick=()=>map.zoomIn();$('zout').onclick=()=>map.zoomOut();$('zfit').onclick=fitRoutes;
+  /* وضع الوكيل */
+  $('ctype').onchange=e=>{AG.type=e.target.value;renderOffers();};
+  $('cqty').oninput=e=>{AG.qty=Math.max(1,+e.target.value||1);renderOffers();};
+  $('cval').oninput=e=>{AG.val=Math.max(5000,+e.target.value||5000);renderOffers();};
+  $('cdl').oninput=e=>{AG.dl=Math.max(5,+e.target.value||36);renderOffers();};
+  $('crisk').oninput=e=>{AG.risk=+e.target.value;$('crisk-v').textContent=AG.risk;renderOffers();};
+  document.querySelectorAll('#aprofile button').forEach(b=>b.onclick=()=>{AG.profile=b.dataset.p;
+    document.querySelectorAll('#aprofile button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderOffers();});
+$('offers').onclick = event => {
+  const button = event.target.closest('button[data-vr]');
+  if (!button) return;
+
+  const routes = getRoutes(ST.from, ST.to);
+  const route = routes?.find(item => item.id === button.dataset.vr);
+  if (!route) return;
+
+  const shipName = button.closest('.offer').querySelector('.rc-h b').textContent;
+  const message = `${shipName} · ${route.name}`;
+
+  ST.sel = route.id;
+  renderMap();
+  map.fitBounds(L.latLngBounds(route.geo), { padding: [28, 28] });
+
+  $('maphint').textContent = message;
+  toast(message);
+
+  if (window.innerWidth <= 900) {
+    $('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+};
+  /* تدفق الأحداث */
+  let timer=null,last=-1;
+  $('feed-sw').onclick=e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',on);
+    clearInterval(timer);if(on){toast('بدأ تدفق الأحداث المحاكى كل 15 ثانية');
+      timer=setInterval(()=>{let i;do{i=Math.floor(Math.random()*EVENTS.length);}while(i===last);last=i;applyEvent(EVENTS[i],true);},15000);}};
+  new ResizeObserver(()=>map.invalidateSize()).observe($('map'));
+  ST.alerts=SEED_ALERTS.map(a=>({...a}));
+  const ea=evalAll(ST);ST.pref=ea.best;ST.sel=ea.best;
+  renderAll();setTimeout(()=>{map.invalidateSize();fitRoutes();},80);
+})();
+</script>
